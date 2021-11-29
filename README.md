@@ -6,3 +6,4 @@ Installation and Usage Instructions
 [2] Download the cli.py and tests.py files. \
 [3] Open the folder where you downloaded the file(s) in a command prompt. \
 [4] To run either of the files, use the following command: python {filename.py}
+[5] Once you run either file, you will be prompted for three pieces of information: the subdomain you are trying to access, the email associated with this subdomain, and an access token. These must be entered in order for either program to run!
