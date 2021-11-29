@@ -1,6 +1,6 @@
 # Zendesk Coding Challenge
 
-Try this out for yourself:
+Installation and Usage Instructions
 --------------------------
 [1] Make sure you have downloaded Python 3 on your computer... if you do not have Python 3 on your computer, follow the instructions at this link: https://www.python.org/downloads/. \
 [2] Download the cli.py and tests.py files. \
