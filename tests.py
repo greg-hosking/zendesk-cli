@@ -21,7 +21,12 @@ while True:
     # the request should return a status code of 404 (not found).
     # If it does exist, we get a status code of 401 (not authenticated).
     url = f'https://{subdomain}.zendesk.com/api/v2/requests'
-    response = requests.get(url)
+    try:
+        response = requests.get(url)
+    except requests.exceptions.ConnectionError:
+        print('Oops! Could not connect to the server. Please check your connection and try again...')
+        quit()
+
     if response.status_code == 401:
         print('Please enter the email associated with this account.')
         email = input()
@@ -34,8 +39,13 @@ while True:
         print('')
 
         # Test the email and token for the given subdomain.
-        response = requests.get(
-            url, auth=HTTPBasicAuth(f'{email}/token', token))
+        try:
+            response = requests.get(
+                url, auth=HTTPBasicAuth(f'{email}/token', token))
+        except requests.exceptions.ConnectionError:
+            print('Oops! Could not connect to the server. Please check your connection and try again...')
+            quit()
+
         if response.status_code == 200:
             print('Successfully authenticated you! Proceeding with unit tests...')
             print('-------------------------------------------------------------')
