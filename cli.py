@@ -3,46 +3,37 @@ from requests.auth import HTTPBasicAuth
 from datetime import datetime
 
 
-REQUESTS_URL = 'https://zccgreghosking.zendesk.com/api/v2/requests'
-EMAIL = 'hoskinggregory@gmail.com'
-TOKEN = '0jprlJiLQxMcfepuKLADbwwQF7F0N8f85FFMyH4G'
-TICKETS_PER_PAGE = 25
-
-
-def get_ticket(id: str, email: str = EMAIL, token: str = TOKEN):
+def get_ticket(subdomain: str, email: str, token: str, id: str = 'ALL'):
     """
-    Calls the Zendesk Ticket API to get a ticket of a given ID as a string. 
-    The function also accepts 'ALL' as an ID and gets ALL tickets.
+    Calls the Zendesk Ticket API to get a ticket of a given ID as a string.
+    The function also maintains 'ALL' as the default ID and gets ALL tickets.
     """
     # Guard against empty ids.
     if not id or id == '':
         print('Oops! Could not find a ticket with that ID. Please try again...')
         return
 
+    url = f'https://{subdomain}.zendesk.com/api/v2/requests'
+
     try:
         if id == 'ALL':
             response = requests.get(
-                REQUESTS_URL, auth=HTTPBasicAuth(f'{email}/token', token))
+                url, auth=HTTPBasicAuth(f'{email}/token', token))
             # Check for any exceptions from the response.
             response.raise_for_status()
             # If no exceptions were thrown, return the tickets JSON.
             return response.json()['requests']
         else:
             response = requests.get(
-                f'{REQUESTS_URL}/{id}', auth=HTTPBasicAuth(f'{email}/token', token))
+                f'{url}/{id}', auth=HTTPBasicAuth(f'{email}/token', token))
             # Check for any exceptions from the response.
             response.raise_for_status()
             # If no exceptions were thrown, return the ticket JSON.
             return response.json()['request']
 
-    # Handle the exception thrown if the user could not be authenticated or
-    # if no ticket exists with the given ID.
+    # Handle the exception thrown if no ticket exists with the given ID.
     except requests.exceptions.HTTPError:
-        if response.status_code == 401:
-            print(
-                'Oops! Could not authenticate you. Please make sure your email and token are correct and try again...')
-        elif response.status_code == 404:
-            print('Oops! Could not find a ticket with that ID. Please try again...')
+        print('Oops! Could not find a ticket with that ID. Please try again...')
 
     # Handle the exception thrown if the user could not connect to the API.
     except requests.exceptions.ConnectionError:
@@ -56,6 +47,7 @@ def get_ticket(id: str, email: str = EMAIL, token: str = TOKEN):
     # Handle any other exceptions...
     except requests.exceptions.RequestException:
         print('Oops! Something went wrong. Please try again...')
+        print('If this continues to happen, then something is wrong on our side. Sorry for the inconvenience.')
 
 
 def print_ticket(ticket_json: str):
@@ -85,6 +77,44 @@ if __name__ == '__main__':
     print('-------------------------------------')
     print()
 
+    # --------------------------------------------------------------------------------
+    # Prompt user for an existing subdomain, and an email and token for the subdomain.
+    # --------------------------------------------------------------------------------
+    while True:
+        print('Please enter the subdomain you would like to access.')
+        print('Example: if the URL were students.zendesk.com, you would enter \'students\' as the subdomain.')
+        subdomain = input()
+        print('')
+
+        # Test the subdomain to see if it exists. If it does not exist,
+        # the request should return a status code of 404 (not found).
+        # If it does exist, we get a status code of 401 (not authenticated).
+        url = f'https://{subdomain}.zendesk.com/api/v2/requests'
+        response = requests.get(url)
+        if response.status_code == 401:
+            print('Please enter the email associated with this account.')
+            email = input()
+            print('')
+
+            print('Please enter an access token for this account.')
+            print('If you do not have an access token, you can create one using the Zendesk agent under Admin > API.')
+            token = input()
+            print('')
+
+            # Test the email and token for the given subdomain.
+            response = requests.get(
+                url, auth=HTTPBasicAuth(f'{email}/token', token))
+            if response.status_code == 200:
+                print('Successfully authenticated you!')
+                break
+            else:
+                print('Oops! Could not authenticate you. Please make sure your email and token are correct for this subdomain and try again...')
+        else:
+            print('Oops! That subdomain does not exist. Please try again...')
+
+    # ---------
+    # MAIN MENU
+    # ---------
     while True:
         print('Please select one of the following options:')
         print('-------------------------------------------')
@@ -94,21 +124,27 @@ if __name__ == '__main__':
         user_input = input()
         print('')
 
+        # -----------------------------------------
         # Handle user input to request all tickets.
+        # -----------------------------------------
         if user_input == '1':
-            tickets = get_ticket('ALL')
+            tickets = get_ticket(subdomain, email, token)
+            if not tickets:
+                continue
 
+            # Print the pages of tickets.
+            tickets_per_page = 25
             n_tickets = len(tickets)
-            n_pages = n_tickets // TICKETS_PER_PAGE
-            if n_tickets % TICKETS_PER_PAGE != 0:
+            n_pages = n_tickets // tickets_per_page
+            if n_tickets % tickets_per_page != 0:
                 n_pages += 1
 
             page_num = 0
             while page_num < n_pages:
                 print(f'Page {page_num + 1} of {n_pages}')
                 print('-------------------------------------')
-                for ticket_num in range(TICKETS_PER_PAGE):
-                    ticket_index = ticket_num + (page_num * TICKETS_PER_PAGE)
+                for ticket_num in range(tickets_per_page):
+                    ticket_index = ticket_num + (page_num * tickets_per_page)
                     if ticket_index >= n_tickets:
                         break
 
@@ -116,6 +152,9 @@ if __name__ == '__main__':
                     print_ticket(tickets[ticket_index])
                 print('')
 
+                # ---------------
+                # PAGINATION MENU
+                # ---------------
                 while True:
                     print('Please select one of the following options:')
                     print('-------------------------------------------')
@@ -155,20 +194,26 @@ if __name__ == '__main__':
                     # Print a newline after processing user input (for clean console).
                     print('')
 
+        # -----------------------------------------------
         # Handle user input to request a specific ticket.
+        # -----------------------------------------------
         elif user_input == '2':
             print('Enter a ticket ID: ')
             id = input()
 
-            ticket = get_ticket(id)
+            ticket = get_ticket(subdomain, email, token, id)
             if ticket:
                 print_ticket(ticket)
 
+        # -------------------------------------
         # Handle user input to exit the viewer.
+        # -------------------------------------
         elif user_input == '3':
             break
 
+        # -------------------------------
         # Handle unrecognized user input.
+        # -------------------------------
         else:
             print('That was not an option....')
 
