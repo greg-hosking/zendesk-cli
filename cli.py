@@ -6,21 +6,30 @@ from datetime import datetime
 REQUESTS_URL = 'https://zccgreghosking.zendesk.com/api/v2/requests'
 EMAIL = 'hoskinggregory@gmail.com'
 TOKEN = '0jprlJiLQxMcfepuKLADbwwQF7F0N8f85FFMyH4G'
-TICKETS_PER_PAGE = 24
+TICKETS_PER_PAGE = 25
 
 
-def get_ticket(id: str):
+def get_ticket(id: str, email: str = EMAIL, token: str = TOKEN):
+    """
+    Calls the Zendesk Ticket API to get a ticket of a given ID as a string. 
+    The function also accepts 'ALL' as an ID and gets ALL tickets.
+    """
+    # Guard against empty ids.
+    if not id or id == '':
+        print('Oops! Could not find a ticket with that ID. Please try again...')
+        return
+
     try:
         if id == 'ALL':
             response = requests.get(
-                REQUESTS_URL, auth=HTTPBasicAuth(f'{EMAIL}/token', TOKEN))
+                REQUESTS_URL, auth=HTTPBasicAuth(f'{email}/token', token))
             # Check for any exceptions from the response.
             response.raise_for_status()
             # If no exceptions were thrown, return the tickets JSON.
             return response.json()['requests']
         else:
             response = requests.get(
-                f'{REQUESTS_URL}/{id}', auth=HTTPBasicAuth(f'{EMAIL}/token', TOKEN))
+                f'{REQUESTS_URL}/{id}', auth=HTTPBasicAuth(f'{email}/token', token))
             # Check for any exceptions from the response.
             response.raise_for_status()
             # If no exceptions were thrown, return the ticket JSON.
